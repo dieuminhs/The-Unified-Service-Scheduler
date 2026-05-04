@@ -20,7 +20,7 @@ Build an Appointment Scheduler that lets a customer request a service appointmen
 | 3 | Skill-tag-based qualification matching (`required ⊆ technician.skills`) | Realistic for automotive service; cleanest to test. |
 | 4 | Optimistic concurrency: serializable transaction + in-txn overlap check + filtered unique index + Polly retry + RowVersion | Standard production pattern; testable as "10 parallel POSTs → 1 win, 9 conflicts". |
 | 5 | Lean scope + reschedule-as-atomic-cancel-then-book | Scenario's three core requirements are the booking flow itself; everything else risks dilution. |
-| 6 | Serilog + OpenTelemetry + Prometheus exporter, all console-mode | All three pillars wired with real instrumentation; one config flip points exporters at OTLP / Loki / Tempo / Prometheus. |
+| 6 | Serilog (stdout) + OpenTelemetry traces (console) + Prometheus `/metrics` endpoint | Three pillars wired with real instrumentation; same simple setup in dev and prod. *How* telemetry is collected is a deployment concern, not an application concern. |
 | 7 | Layered architecture (`Domain` → `Application` → `Infrastructure` ← `Api`) with SOLID-disciplined splits | Mirrors the use-case shape; services are testable as a plain class library; no MediatR ceremony. |
 
 ### Goals
@@ -49,11 +49,11 @@ Real auth (only `X-Dealership-Id` header stub), notifications, per-technician sh
 │  - Test harness    │    │  │  Idempotency · ProblemDetails ·        │ │    └──────────────────┘
 │                    │    │  │  GlobalException · OTel ASP.NET        │ │
 │ Mock auth:         │    │  └────────────────┬───────────────────────┘ │    ┌──────────────────┐
-│  X-Dealership-Id   │    │                   ▼                         │    │ Telemetry sinks  │
-│  header stub       │    │  ┌────────────────────────────────────────┐ │    │  console (demo)  │
+│  X-Dealership-Id   │    │                   ▼                         │    │ Telemetry        │
+│  header stub       │    │  ┌────────────────────────────────────────┐ │    │ stdout (logs +   │
 └────────────────────┘    │  │ Controllers (thin)                     │ │    │  /metrics        │
-                          │  └────────────────┬───────────────────────┘ │    │  swap to OTLP    │
-                          │                   ▼                         │    │  via config      │
+                          │  └────────────────┬───────────────────────┘ │    │   traces)        │
+                          │                   ▼                         │    │  (Prometheus)    │
                           │  ┌────────────────────────────────────────┐ │    └──────────────────┘
                           │  │ Application — services (split per SRP) │ │
                           │  │  Booking · Cancellation · Reschedule · │ │    ┌──────────────────┐
@@ -103,7 +103,7 @@ Real auth (only `X-Dealership-Id` header stub), notifications, per-technician sh
 | Persistence | SQLite (default), SQL Server-compatible via config swap | Zero-config for the demo; one connection-string change for production. SQLite WAL mode gives single-writer serialization for free. |
 | Validation | FluentValidation | Declarative, testable, separates input-shape validation from business rules. |
 | Logging | Serilog (`Serilog.AspNetCore` + `Serilog.Formatting.Compact`) | Structured-first; rich enrichers; supported by every observability backend. |
-| Telemetry | OpenTelemetry .NET SDK + Prometheus exporter | Vendor-neutral; one config line swaps console exporter for OTLP. |
+| Telemetry | OpenTelemetry .NET SDK + Prometheus exporter (`/metrics` endpoint) | Vendor-neutral instrumentation; metrics scrape-ready; logs and traces to stdout. |
 | Resilience | Polly v8 (`Microsoft.Extensions.Resilience`) | Standard for transient-failure handling; clean retry policy DSL. |
 | Testing | NUnit 4 + Moq + FluentAssertions + `WebApplicationFactory` + NetArchTest + Verify | NUnit 4 native parameterised tests; Moq for boundary mocks only; `WebApplicationFactory` for full HTTP integration; NetArchTest enforces architectural boundaries; Verify snapshots the OpenAPI contract. |
 
@@ -425,11 +425,17 @@ ASP.NET Core middleware itself, Serilog/OTel wiring (smoke-tested via `curl /met
 
 ## 8. Observability
 
-All three pillars are wired with **swappable exporters** — console in the demo, one config switch for OTLP / Prometheus / Loki / Tempo in production.
+All three pillars are wired with one consistent setup that works the same in **dev** and **prod**:
+
+- **Logs** — Serilog structured JSON to stdout (where any container runtime, journald, or log shipper picks them up).
+- **Metrics** — Prometheus exposition at `/metrics` (any monitoring stack that scrapes Prometheus reads it).
+- **Traces** — OpenTelemetry `Activity` spans wired throughout the booking codepath; rendered to the console for the demo.
+
+The application's job is to **emit** clean, correlated telemetry. *How* it gets stored, queried, or visualised is a deployment concern, not an application concern. There is no exporter-swap code in the app.
 
 ### 8.1 Logging — Serilog
 
-Compact JSON formatter to console. Log scope fields stamped on every line:
+Compact JSON formatter to stdout. Log scope fields stamped on every line:
 
 | Field | Source |
 |---|---|
@@ -442,9 +448,9 @@ Compact JSON formatter to console. Log scope fields stamped on every line:
 
 Request logs use `UseSerilogRequestLogging()` with method, status, elapsed-ms, route. **PII is never logged** — services use IDs only; a `SensitiveAttribute` + custom `IDestructuringPolicy` masks any field that slips through.
 
-### 8.2 Metrics — OpenTelemetry → Prometheus
+### 8.2 Metrics — Prometheus exposition
 
-`Meter` named `Scheduler.Bookings`. Exposed at `/metrics` via `OpenTelemetry.Exporter.Prometheus.AspNetCore`.
+`Meter` named `Scheduler.Bookings`. Exposed at `/metrics` via `OpenTelemetry.Exporter.Prometheus.AspNetCore`. Any Prometheus-compatible scraper can read it without further configuration.
 
 | Name | Kind | Tags | Purpose |
 |---|---|---|---|
@@ -481,19 +487,11 @@ Span attributes: `dealership.id`, `service_type.id`, `appointment.id`, `outcome`
 - `/health/live` — constant `Healthy`, never depends on DB.
 - `/health/ready` — `AddDbContextCheck<SchedulerDbContext>(tags: ["ready"])`.
 
-### 8.5 Configuration switchover (demo → prod)
-
-```jsonc
-"Telemetry": { "ExporterMode": "console", "OtlpEndpoint": null }
-```
-
-Setting `Telemetry__ExporterMode=otlp` and `Telemetry__OtlpEndpoint=...` flips logs / traces / metrics into OTLP — no code change.
-
-### 8.6 What proves it works in the demo
+### 8.5 What proves it works
 
 - Boot the API → `curl http://localhost:5000/metrics` shows `bookings_total{outcome="confirmed"}` ticking up after one POST.
 - Run the concurrency test → `bookings_total{outcome="conflict"}` jumps by 9, `booking_retries_total{outcome="resolved"}` climbs.
-- Force an error → console JSON log line with full context (correlation id, dealership id, exception, stacktrace).
+- Force an error → stdout JSON log line with full context (correlation id, dealership id, exception, stacktrace).
 - The console-formatted trace shows the booking-attempt span hierarchy on each request.
 
 ---
@@ -567,8 +565,6 @@ dotnet test --filter Category=Concurrency
 | `Booking:MaxRetries` | Polly attempts (default 3) |
 | `Booking:RetryBaseDelayMs` | Jittered backoff base (default 50) |
 | `Booking:DefaultGranularityMinutes` | Availability slot step (default 15) |
-| `Telemetry:ExporterMode` | `console` \| `otlp` (default `console`) |
-| `Telemetry:OtlpEndpoint` | Required when `otlp` |
 | `Seeding:Enabled` | Seed demo data on startup (default `true` in Development) |
 
 ---
@@ -586,7 +582,7 @@ dotnet test --filter Category=Concurrency
 | Soft-delete cleanup job | Background `IHostedService` running `ExecuteDelete()` past retention. |
 | HATEOAS, GraphQL, gRPC | Single REST surface keeps the demo focused. |
 | Service worker / WebSocket live availability | Polling is enough for the demo. |
-| CI pipeline, compose stack, Grafana dashboards | Local commands cover what the brief asks for; container + OTLP exporters make the prod story trivial. |
+| CI pipeline, compose stack, Grafana dashboards | Local commands cover what the brief asks for; the app emits standard telemetry that any backend (Prometheus / Loki / etc.) can ingest at deploy time. |
 
 ---
 
