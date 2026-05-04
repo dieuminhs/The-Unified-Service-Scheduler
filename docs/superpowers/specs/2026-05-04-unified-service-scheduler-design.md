@@ -141,12 +141,14 @@ A model-building convention applies `HasQueryFilter(e => !e.IsDeleted)` to every
 - **`Customer`** — `Id`, `FirstName`, `LastName`, `Email` (unique, filtered), `Phone`.
 - **`Vehicle`** — `Id`, `CustomerId` (FK), `Vin` (unique, filtered), `Make`, `Model`, `Year`.
 - **`ServiceType`** — `Id`, `Name`, `DurationMinutes`, `Description`.
-- **`Technician`** — `Id`, `DealershipId` (FK), `FullName`.
-- **`ServiceBay`** — `Id`, `DealershipId` (FK), `Name`.
+- **`Technician`** — `Id`, `FullName`. *Independent entity; assigned to one or more dealerships via `TechnicianDealership`.* This models multi-site dealership groups where a technician may rotate between locations.
+- **`ServiceBay`** — `Id`, `Name`. *Independent entity; assigned to one or more dealerships via `ServiceBayDealership`.* For symmetry with technicians and to support shared-resource arrangements between sites.
 - **`Skill`** — `Id`, `Code` (unique, filtered, e.g. `EV_CERT`), `Name`, `Description`, `Category`.
 
 **Junction entities** (also inherit `EntityBase`):
 
+- **`TechnicianDealership`** — composite PK `(TechnicianId, DealershipId)`. Skills are personal certifications and remain on `TechnicianSkill`, *not* duplicated per assignment.
+- **`ServiceBayDealership`** — composite PK `(ServiceBayId, DealershipId)`.
 - **`TechnicianSkill`** — composite PK `(TechnicianId, SkillId)`.
 - **`ServiceTypeRequiredSkill`** — composite PK `(ServiceTypeId, SkillId)`.
 
@@ -168,8 +170,12 @@ A model-building convention applies `HasQueryFilter(e => !e.IsDeleted)` to every
 | `UX_Skill_Code` | `(Code)` UNIQUE | `IsDeleted = 0` | Skill code uniqueness, allows re-use after deletion. |
 | `UX_Customer_Email` | `(Email)` UNIQUE | `IsDeleted = 0` | Same, for customer email. |
 | `UX_Vehicle_Vin` | `(Vin)` UNIQUE | `IsDeleted = 0` | Same, for VIN. |
+| `IX_TechnicianDealership_Dealership` | `(DealershipId, TechnicianId)` | `IsDeleted = 0` | Fast lookup of technicians assigned to a dealership during availability filtering. |
+| `IX_ServiceBayDealership_Dealership` | `(DealershipId, ServiceBayId)` | `IsDeleted = 0` | Same, for bays. |
 
 > **Note:** Filtered (partial) unique indexes catch *identical-start* collisions cheaply. They do **not** catch overlapping ranges with different starts. Full overlap prevention is enforced inside the booking transaction via the `NOT EXISTS` overlap query (Section 6).
+>
+> **Cross-dealership overlap:** Because a technician (or bay) may be assigned to multiple dealerships, the overlap-prevention indexes are intentionally scoped by `TechnicianId` / `ServiceBayId` *across all dealerships* — a technician can only be in one place at a time, regardless of which dealership the appointment is for. The same applies to bays under any shared-resource arrangement.
 
 ### 4.4 Deliberate simplifications
 
@@ -201,7 +207,9 @@ REST over JSON, versioned at the URL prefix (`/api/v1/...`), problem details (RF
 |---|---|---|
 | `GET` | `/api/v1/availability/slots?dealershipId=&serviceTypeId=&from=&to=&granularityMinutes=15` | Returns the list of `[start, end)` windows where ≥1 qualified technician AND ≥1 bay are free for the full service duration. |
 | `GET` | `/api/v1/dealerships`, `/api/v1/dealerships/{id}` | Read dealerships. |
-| `GET` | `/api/v1/dealerships/{id}/technicians`, `/api/v1/dealerships/{id}/bays` | Read scoped resources. |
+| `GET` | `/api/v1/dealerships/{id}/technicians`, `/api/v1/dealerships/{id}/bays` | Read technicians / bays *assigned to* the given dealership (via `TechnicianDealership` / `ServiceBayDealership`). |
+| `GET` | `/api/v1/technicians`, `/api/v1/technicians/{id}` | Read technicians as independent entities; the response includes assigned dealerships and skills. |
+| `GET` | `/api/v1/bays`, `/api/v1/bays/{id}` | Read bays as independent entities; the response includes assigned dealerships. |
 | `GET` | `/api/v1/service-types`, `/api/v1/skills` | Read catalogs. |
 | `GET` | `/api/v1/customers/{id}/vehicles` | Read vehicles by customer. |
 
@@ -285,9 +293,9 @@ Auth (only `X-Dealership-Id`), pagination cursors (offset+limit, capped at 100),
 4. `BookingService.BookAsync` — begin serializable transaction (SQLite: `BEGIN IMMEDIATE` in WAL mode; SQL Server / Postgres: true SERIALIZABLE).
 5. Load `Dealership`, `ServiceType`, `Customer`, `Vehicle` — verify they exist, are active, and belong to the right dealership scope.
 6. Compute `EndsAtUtc = StartsAtUtc + ServiceType.DurationMinutes`. Validate against `Dealership.OpeningHours` for that day-of-week in dealership timezone.
-7. `QualificationMatcher.FindQualified(serviceTypeId, dealershipId)` — SQL `NOT EXISTS / NOT EXISTS` pattern, returns ordered technician list.
-8. `AvailabilityService.FirstFreeTechnician([Start, End))` — among the qualified set, find the first technician with no overlapping `Confirmed` appointment using the covering index.
-9. `AvailabilityService.FirstFreeBay([Start, End))` — same for bays.
+7. `QualificationMatcher.FindQualified(serviceTypeId, dealershipId)` — joins `TechnicianDealership` to scope candidates to the booking dealership, then applies the SQL `NOT EXISTS / NOT EXISTS` skill-superset pattern. Returns the ordered technician list.
+8. `AvailabilityService.FirstFreeTechnician([Start, End))` — among the qualified, dealership-assigned set, find the first technician with no overlapping `Confirmed` appointment *across all dealerships* (a technician can only be in one place at a time).
+9. `AvailabilityService.FirstFreeBay([Start, End))` — joins `ServiceBayDealership` to scope candidates to the booking dealership, then finds the first bay with no overlapping `Confirmed` appointment across all dealerships.
 10. Construct the `Appointment` (status `Confirmed`), `SaveChangesAsync()` — filtered unique indexes and FK constraints fire.
 11. Persist the idempotency record (`(key, bodyHash, appointmentId)`).
 12. `COMMIT`. Return `201 Created` with `Location`.
@@ -367,6 +375,9 @@ The brief weighs Technical Execution as one of four evaluation dimensions; the s
 - `Book_NoQualifiedTechnician_Returns422_WithCode_TECHNICIAN_UNQUALIFIED`
 - `Book_AllTechniciansBusyForWindow_Returns409_WithCode_SLOT_TAKEN`
 - `Book_AllBaysBusyForWindow_Returns409_WithCode_SLOT_TAKEN`
+- `Book_TechnicianNotAssignedToDealership_NotConsidered_FallsBackToOthers`
+- `Book_BayNotAssignedToDealership_NotConsidered_FallsBackToOthers`
+- `Book_TechnicianBookedAtAnotherDealershipForOverlappingWindow_NotConsidered` — proves cross-dealership overlap blocking.
 - `Book_StartInPast_Returns422`
 - `Book_VehicleBelongsToDifferentCustomer_Returns422`
 - `Cancel_FreesSlotForRebooking`
@@ -591,6 +602,9 @@ Per the brief's "make a reasonable assumption and document it":
 - Half-open interval semantics: `[Start, End)` — adjacent appointments do not overlap.
 - A confirmed appointment owns exactly one technician and one bay for its full duration.
 - Cancelling does not require a reason in v1.
+- Technicians and bays are independent entities, each assignable to one or more dealerships via M:N junctions. A booking selects only resources currently assigned to its dealership, and overlap checks span all dealerships (a technician can't be in two places at once).
+- Skills are personal to a technician and *not* dealership-scoped (a certification doesn't change between sites).
+- Booking the technician's home dealership versus a visiting one is undistinguished in v1; both behave identically.
 
 ---
 
@@ -614,7 +628,7 @@ This document was produced through an iterative dialogue with Claude (Anthropic)
 - **2–3-options-with-tradeoffs at every fork.** Architecture style (vertical slice / layered / clean), concurrency strategy (optimistic / pessimistic / queue), test stack (NUnit vs xUnit, Moq vs NSubstitute) — each presented with explicit pros/cons before a choice was made.
 - **Per-section approval before advancing.** Sections 1–7 (architecture, domain model, API surface, booking flow, testing, observability, project structure) were each reviewed and signed off before the next was drafted.
 - **Visual companion for spatial reasoning.** Architecture diagrams, ERDs, and the booking sequence were shown as rendered HTML mockups to make boundary and flow choices unambiguous; text was used for everything that read better as prose or tables.
-- **Pushback explicit.** When the AI's first cut omitted soft-delete on entities, the response was a one-line correction ("All entities should have IsActive and IsDeleted") and the model was revised. When the project boundary was wrong (`Api` doing service work), the correction split it into `Application` + `Api`.
+- **Pushback explicit.** Several reviewer corrections reshaped the design rather than accepting the first cut: soft-delete + `IsActive` were added to every entity via a shared `EntityBase`; `Skill` was promoted from a string code to a first-class entity; the project layout was split so `Application` and `Api` no longer share concerns; CI scope was removed from the deliverables; and `Technician` / `ServiceBay` were lifted out of a 1:N relationship with `Dealership` into M:N junctions, prompting a corresponding revision of the booking and availability flows.
 
 This produced a design where every decision is traceable to a question and an option set, every simplification is named, and every "out of scope" item has an extension path. The implementation phase will use a separate written plan, derived from this spec, to direct the AI through scaffolding, test-first slice implementation, and verification — with the same one-question-at-a-time discipline applied at the code level.
 
