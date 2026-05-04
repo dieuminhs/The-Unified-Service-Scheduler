@@ -14,7 +14,7 @@ public sealed class SkillConfiguration : IEntityTypeConfiguration<Skill>
         b.Property(x => x.Name).IsRequired().HasMaxLength(120);
         b.Property(x => x.Description).HasMaxLength(500);
         b.Property(x => x.Category).HasMaxLength(120);
-        b.Property(x => x.RowVersion).IsRowVersion();
+        b.Property(x => x.RowVersion).IsConcurrencyToken();
 
         b.HasIndex(x => x.Code).IsUnique().HasDatabaseName("UX_Skill_Code").HasFilter("IsDeleted = 0");
     }

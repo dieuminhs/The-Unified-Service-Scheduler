@@ -14,7 +14,7 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         b.Property(x => x.LastName).IsRequired().HasMaxLength(100);
         b.Property(x => x.Email).IsRequired().HasMaxLength(254);
         b.Property(x => x.Phone).HasMaxLength(40);
-        b.Property(x => x.RowVersion).IsRowVersion();
+        b.Property(x => x.RowVersion).IsConcurrencyToken();
 
         b.HasIndex(x => x.Email)
             .IsUnique()

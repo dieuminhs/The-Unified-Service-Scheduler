@@ -10,7 +10,7 @@ public sealed class TechnicianDealershipConfiguration : IEntityTypeConfiguration
     {
         b.ToTable("TechnicianDealerships");
         b.HasKey(x => new { x.TechnicianId, x.DealershipId });
-        b.Property(x => x.RowVersion).IsRowVersion();
+        b.Property(x => x.RowVersion).IsConcurrencyToken();
 
         b.HasOne(x => x.Technician).WithMany(t => t.DealershipAssignments).HasForeignKey(x => x.TechnicianId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Dealership).WithMany(d => d.TechnicianAssignments).HasForeignKey(x => x.DealershipId).OnDelete(DeleteBehavior.Cascade);

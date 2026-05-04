@@ -15,7 +15,7 @@ public sealed class AppointmentConfiguration : IEntityTypeConfiguration<Appointm
         b.Property(x => x.StartsAtUtc).IsRequired();
         b.Property(x => x.EndsAtUtc).IsRequired();
 
-        b.Property(x => x.RowVersion).IsRowVersion();
+        b.Property(x => x.RowVersion).IsConcurrencyToken();
 
         b.HasOne<Dealership>().WithMany().HasForeignKey(x => x.DealershipId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<Customer>().WithMany().HasForeignKey(x => x.CustomerId).OnDelete(DeleteBehavior.Restrict);

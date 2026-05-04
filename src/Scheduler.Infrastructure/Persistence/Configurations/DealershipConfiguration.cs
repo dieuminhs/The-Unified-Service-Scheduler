@@ -14,7 +14,7 @@ public sealed class DealershipConfiguration : IEntityTypeConfiguration<Dealershi
         b.HasKey(x => x.Id);
         b.Property(x => x.Name).IsRequired().HasMaxLength(200);
         b.Property(x => x.TimeZone).IsRequired().HasMaxLength(64);
-        b.Property(x => x.RowVersion).IsRowVersion();
+        b.Property(x => x.RowVersion).IsConcurrencyToken();
 
         b.Property(x => x.OpeningHours)
             .HasConversion(

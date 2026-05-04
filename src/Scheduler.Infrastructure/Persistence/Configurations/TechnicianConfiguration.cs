@@ -11,6 +11,6 @@ public sealed class TechnicianConfiguration : IEntityTypeConfiguration<Technicia
         b.ToTable("Technicians");
         b.HasKey(x => x.Id);
         b.Property(x => x.FullName).IsRequired().HasMaxLength(200);
-        b.Property(x => x.RowVersion).IsRowVersion();
+        b.Property(x => x.RowVersion).IsConcurrencyToken();
     }
 }

@@ -10,7 +10,7 @@ public sealed class TechnicianSkillConfiguration : IEntityTypeConfiguration<Tech
     {
         b.ToTable("TechnicianSkills");
         b.HasKey(x => new { x.TechnicianId, x.SkillId });
-        b.Property(x => x.RowVersion).IsRowVersion();
+        b.Property(x => x.RowVersion).IsConcurrencyToken();
 
         b.HasOne(x => x.Technician).WithMany(t => t.Skills).HasForeignKey(x => x.TechnicianId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Skill).WithMany().HasForeignKey(x => x.SkillId).OnDelete(DeleteBehavior.Cascade);

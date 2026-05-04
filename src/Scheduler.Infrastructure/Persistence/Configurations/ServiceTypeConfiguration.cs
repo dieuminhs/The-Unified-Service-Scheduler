@@ -13,6 +13,6 @@ public sealed class ServiceTypeConfiguration : IEntityTypeConfiguration<ServiceT
         b.Property(x => x.Name).IsRequired().HasMaxLength(120);
         b.Property(x => x.DurationMinutes).IsRequired();
         b.Property(x => x.Description).HasMaxLength(500);
-        b.Property(x => x.RowVersion).IsRowVersion();
+        b.Property(x => x.RowVersion).IsConcurrencyToken();
     }
 }

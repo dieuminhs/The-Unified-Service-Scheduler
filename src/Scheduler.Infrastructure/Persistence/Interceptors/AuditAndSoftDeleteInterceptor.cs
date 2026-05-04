@@ -37,10 +37,12 @@ public sealed class AuditAndSoftDeleteInterceptor : SaveChangesInterceptor
             {
                 case EntityState.Added:
                     entry.Entity.CreatedAtUtc = now;
+                    entry.Entity.RowVersion = Guid.NewGuid().ToByteArray();
                     break;
 
                 case EntityState.Modified:
                     entry.Entity.UpdatedAtUtc = now;
+                    entry.Entity.RowVersion = Guid.NewGuid().ToByteArray();
                     break;
 
                 case EntityState.Deleted:
@@ -48,6 +50,7 @@ public sealed class AuditAndSoftDeleteInterceptor : SaveChangesInterceptor
                     entry.Entity.IsDeleted = true;
                     entry.Entity.DeletedAtUtc = now;
                     entry.Entity.UpdatedAtUtc = now;
+                    entry.Entity.RowVersion = Guid.NewGuid().ToByteArray();
                     break;
             }
         }

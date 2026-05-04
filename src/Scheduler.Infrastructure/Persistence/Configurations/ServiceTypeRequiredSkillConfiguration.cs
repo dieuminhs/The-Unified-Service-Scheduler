@@ -10,7 +10,7 @@ public sealed class ServiceTypeRequiredSkillConfiguration : IEntityTypeConfigura
     {
         b.ToTable("ServiceTypeRequiredSkills");
         b.HasKey(x => new { x.ServiceTypeId, x.SkillId });
-        b.Property(x => x.RowVersion).IsRowVersion();
+        b.Property(x => x.RowVersion).IsConcurrencyToken();
 
         b.HasOne(x => x.ServiceType).WithMany(s => s.RequiredSkills).HasForeignKey(x => x.ServiceTypeId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Skill).WithMany().HasForeignKey(x => x.SkillId).OnDelete(DeleteBehavior.Cascade);

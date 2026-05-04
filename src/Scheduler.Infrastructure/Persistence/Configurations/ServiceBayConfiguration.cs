@@ -11,6 +11,6 @@ public sealed class ServiceBayConfiguration : IEntityTypeConfiguration<ServiceBa
         b.ToTable("ServiceBays");
         b.HasKey(x => x.Id);
         b.Property(x => x.Name).IsRequired().HasMaxLength(120);
-        b.Property(x => x.RowVersion).IsRowVersion();
+        b.Property(x => x.RowVersion).IsConcurrencyToken();
     }
 }

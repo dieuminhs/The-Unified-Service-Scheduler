@@ -10,7 +10,7 @@ public sealed class ServiceBayDealershipConfiguration : IEntityTypeConfiguration
     {
         b.ToTable("ServiceBayDealerships");
         b.HasKey(x => new { x.ServiceBayId, x.DealershipId });
-        b.Property(x => x.RowVersion).IsRowVersion();
+        b.Property(x => x.RowVersion).IsConcurrencyToken();
 
         b.HasOne(x => x.ServiceBay).WithMany(s => s.DealershipAssignments).HasForeignKey(x => x.ServiceBayId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Dealership).WithMany(d => d.ServiceBayAssignments).HasForeignKey(x => x.DealershipId).OnDelete(DeleteBehavior.Cascade);
