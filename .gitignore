@@ -58,3 +58,6 @@ nunit-*.xml
 
 # Superpowers brainstorm session files
 .superpowers/
+
+# Visual Studio cache
+.vs/
