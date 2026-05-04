@@ -13,6 +13,14 @@ public sealed class UnitOfWork : IUnitOfWork
 
     public async Task<IAsyncDisposable> BeginSerializableTransactionAsync(CancellationToken ct)
     {
+        // If a transaction is already in progress (e.g. nested service call from
+        // ReschedulingService -> BookingService), join it as a no-op scope so the
+        // outer transaction remains the boundary. The caller still gets atomicity.
+        if (_ctx.Database.CurrentTransaction is not null)
+        {
+            return new NoopScope();
+        }
+
         var txn = await _ctx.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         return new TransactionScope(txn);
     }
@@ -26,5 +34,10 @@ public sealed class UnitOfWork : IUnitOfWork
             await _txn.CommitAsync();
             await _txn.DisposeAsync();
         }
+    }
+
+    private sealed class NoopScope : IAsyncDisposable
+    {
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 }
