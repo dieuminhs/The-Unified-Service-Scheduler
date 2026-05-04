@@ -1,0 +1,42 @@
+@base = http://localhost:5000
+@dealershipA = REPLACE_WITH_SEEDED_GUID
+@customer = REPLACE_WITH_SEEDED_GUID
+@vehicle = REPLACE_WITH_SEEDED_GUID
+@quickService = REPLACE_WITH_SEEDED_GUID
+
+### List dealerships (use this to discover seeded GUIDs)
+GET {{base}}/api/v1/dealerships
+
+### Book an appointment
+POST {{base}}/api/v1/appointments
+Content-Type: application/json
+Idempotency-Key: 7f4a-{{$randomInt 1000 9999}}
+
+{
+  "dealershipId":  "{{dealershipA}}",
+  "customerId":    "{{customer}}",
+  "vehicleId":     "{{vehicle}}",
+  "serviceTypeId": "{{quickService}}",
+  "startsAtUtc":   "2026-05-12T09:30:00Z"
+}
+
+### Get an appointment by id
+GET {{base}}/api/v1/appointments/REPLACE_WITH_RETURNED_ID
+
+### List availability slots
+GET {{base}}/api/v1/availability/slots?dealershipId={{dealershipA}}&serviceTypeId={{quickService}}&fromUtc=2026-05-12T08:00:00Z&toUtc=2026-05-12T17:00:00Z&granularityMinutes=30
+
+### Cancel an appointment
+POST {{base}}/api/v1/appointments/REPLACE_WITH_RETURNED_ID/cancel
+
+### Reschedule an appointment
+POST {{base}}/api/v1/appointments/REPLACE_WITH_RETURNED_ID/reschedule
+Content-Type: application/json
+
+{ "newStartsAtUtc": "2026-05-12T10:30:00Z" }
+
+### Health
+GET {{base}}/health/ready
+
+### Metrics
+GET {{base}}/metrics
