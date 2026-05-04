@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,6 +38,18 @@ public sealed class SchedulerWebAppFactory : WebApplicationFactory<Program>
     public new async Task DisposeAsync()
     {
         await base.DisposeAsync();
-        if (File.Exists(DbPath)) File.Delete(DbPath);
+
+        // Release pooled SQLite connections so the file handle is freed before deletion.
+        SqliteConnection.ClearAllPools();
+
+        // Best-effort delete: the OS may briefly retain the handle even after pool clearing.
+        try
+        {
+            if (File.Exists(DbPath)) File.Delete(DbPath);
+        }
+        catch (IOException)
+        {
+            // Ignore - the test DB will be cleaned up on next run or by the OS.
+        }
     }
 }
