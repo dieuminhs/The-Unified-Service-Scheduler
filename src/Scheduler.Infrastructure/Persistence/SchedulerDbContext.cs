@@ -27,20 +27,11 @@ public sealed class SchedulerDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(SchedulerDbContext).Assembly);
-        ApplyTemporaryModelWorkarounds(modelBuilder);
-        ApplySoftDeleteQueryFilter(modelBuilder);
-    }
 
-    // TODO(Task 11): remove these workarounds once IEntityTypeConfiguration<T> classes are added.
-    // Until then, EF cannot infer PKs for join tables or map Dealership.OpeningHours / IdempotencyEntry.
-    private static void ApplyTemporaryModelWorkarounds(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<TechnicianDealership>().HasKey(x => new { x.TechnicianId, x.DealershipId });
-        modelBuilder.Entity<ServiceBayDealership>().HasKey(x => new { x.ServiceBayId, x.DealershipId });
-        modelBuilder.Entity<TechnicianSkill>().HasKey(x => new { x.TechnicianId, x.SkillId });
-        modelBuilder.Entity<ServiceTypeRequiredSkill>().HasKey(x => new { x.ServiceTypeId, x.SkillId });
+        // IdempotencyEntry's full configuration arrives in Task 12; until then, declare its key here.
         modelBuilder.Entity<IdempotencyEntry>().HasKey(x => x.Key);
-        modelBuilder.Entity<Dealership>().Ignore(d => d.OpeningHours);
+
+        ApplySoftDeleteQueryFilter(modelBuilder);
     }
 
     private static void ApplySoftDeleteQueryFilter(ModelBuilder modelBuilder)
