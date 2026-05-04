@@ -11,9 +11,11 @@
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Moq" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Scheduler.Domain\Scheduler.Domain.csproj" />
     <ProjectReference Include="..\..\src\Scheduler.Application\Scheduler.Application.csproj" />
+    <ProjectReference Include="..\..\src\Scheduler.Infrastructure\Scheduler.Infrastructure.csproj" />
   </ItemGroup>
 </Project>
