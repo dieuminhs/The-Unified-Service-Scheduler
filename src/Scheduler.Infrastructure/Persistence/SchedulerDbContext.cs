@@ -27,10 +27,6 @@ public sealed class SchedulerDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(SchedulerDbContext).Assembly);
-
-        // IdempotencyEntry's full configuration arrives in Task 12; until then, declare its key here.
-        modelBuilder.Entity<IdempotencyEntry>().HasKey(x => x.Key);
-
         ApplySoftDeleteQueryFilter(modelBuilder);
     }
 
