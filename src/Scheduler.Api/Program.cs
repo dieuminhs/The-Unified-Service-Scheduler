@@ -62,6 +62,12 @@ using (var scope = app.Services.CreateScope())
 {
     var ctx = scope.ServiceProvider.GetRequiredService<SchedulerDbContext>();
     await ctx.Database.MigrateAsync();
+
+    var seedingOptions = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<SeedingOptions>>().Value;
+    if (seedingOptions.Enabled)
+    {
+        await Scheduler.Api.Seed.SeedData.SeedAsync(ctx);
+    }
 }
 
 app.UseSerilogRequestLogging();

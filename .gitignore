@@ -61,3 +61,8 @@ nunit-*.xml
 
 # Visual Studio cache
 .vs/
+
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal
