@@ -15,8 +15,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog((ctx, sp, cfg) => cfg
     .ReadFrom.Configuration(ctx.Configuration)
     .Enrich.FromLogContext()
-    .Enrich.WithMachineName()
-    .Enrich.WithThreadId()
     .WriteTo.Console(new Serilog.Formatting.Compact.CompactJsonFormatter()));
 
 // Configuration objects
@@ -37,15 +35,22 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<SchedulerDbContext>(tags: new[] { "ready" });
 
-// OpenTelemetry — traces only
+// OpenTelemetry — traces only; filter out infra noise paths
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(r => r.AddService("Scheduler.Api"))
     .WithTracing(t => t
         .AddSource(SchedulerActivitySource.Name)
-        .AddAspNetCoreInstrumentation()
+        .AddAspNetCoreInstrumentation(o => o.Filter = ctx => !IsNoisePath(ctx.Request.Path))
         .AddHttpClientInstrumentation()
         .AddEntityFrameworkCoreInstrumentation()
         .AddConsoleExporter());
+
+static bool IsNoisePath(PathString path) =>
+    path.StartsWithSegments("/health") ||
+    path.StartsWithSegments("/swagger") ||
+    path.StartsWithSegments("/_framework") ||
+    path == "/" ||
+    path == "/favicon.ico";
 
 var app = builder.Build();
 
@@ -62,7 +67,17 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-app.UseSerilogRequestLogging();
+app.UseSerilogRequestLogging(options =>
+{
+    options.GetLevel = (httpContext, _, ex) =>
+    {
+        if (ex != null || httpContext.Response.StatusCode >= 500)
+            return Serilog.Events.LogEventLevel.Error;
+        if (IsNoisePath(httpContext.Request.Path))
+            return Serilog.Events.LogEventLevel.Verbose;
+        return Serilog.Events.LogEventLevel.Information;
+    };
+});
 
 if (app.Environment.IsDevelopment())
 {
