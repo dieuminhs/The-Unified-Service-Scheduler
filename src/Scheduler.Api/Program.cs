@@ -11,11 +11,13 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Logging — Serilog over the host
+// Logging — Serilog over the host. Plain text output for human readability;
+// trace/span IDs are still accessible in the {Properties} bag.
 builder.Host.UseSerilog((ctx, sp, cfg) => cfg
     .ReadFrom.Configuration(ctx.Configuration)
     .Enrich.FromLogContext()
-    .WriteTo.Console(new Serilog.Formatting.Compact.CompactJsonFormatter()));
+    .WriteTo.Console(outputTemplate:
+        "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"));
 
 // Configuration objects
 builder.Services.Configure<BookingOptions>(builder.Configuration.GetSection(BookingOptions.SectionName));
