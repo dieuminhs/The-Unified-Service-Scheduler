@@ -107,7 +107,7 @@ Every AI-generated artifact was verified before acceptance:
 - **Determinism in tests.** `IClock` is injected everywhere a service touches time; `IResourceSelector` orders selection deterministically. Tests can predict which technician gets assigned and which slot wins a race.
 - **YAGNI, ruthlessly.** Auth, notifications, GraphQL, dashboards, OTLP exporters — every one named explicitly as out-of-scope with a one-line extension path, so the design's *non*-goals are as visible as its goals.
 
-The full per-decision history lives in `docs/superpowers/specs/2026-05-04-unified-service-scheduler-design.md` (Section 13, "AI collaboration in the design phase"). The 39-task implementation plan is at `docs/superpowers/plans/2026-05-04-unified-service-scheduler-implementation.md`.
+The full per-decision history lives in `docs/superpowers/specs/2026-05-04-unified-service-scheduler-design.md` (Section 11, "AI collaboration in the design phase"). The 39-task implementation plan is at `docs/superpowers/plans/2026-05-04-unified-service-scheduler-implementation.md`.
 
 ## License
 

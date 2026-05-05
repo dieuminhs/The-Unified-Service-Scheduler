@@ -569,42 +569,7 @@ dotnet test --filter Category=Concurrency
 
 ---
 
-## 10. Non-goals and how they would extend
-
-| Out of scope | Extension path |
-|---|---|
-| Real auth (OAuth/JWT) | Replace `X-Dealership-Id` stub with JWT principal; add `[Authorize(Policy="DealershipScope")]` on controllers. |
-| Notifications (email / SMS) | Outbox pattern: write `OutboxMessage` in the booking transaction; a separate worker dispatches. |
-| Per-technician working hours / leave | Add `TechnicianShift` and extend `AvailabilityService`. |
-| Bay typing / equipment requirements | Mirror the skill pattern: `ServiceTypeAllowedBayType` junction. |
-| Pricing / invoicing | Different bounded context. |
-| Multi-region / sharding | `Dealership.Id` is the natural partition key. |
-| Soft-delete cleanup job | Background `IHostedService` running `ExecuteDelete()` past retention. |
-| HATEOAS, GraphQL, gRPC | Single REST surface keeps the demo focused. |
-| Service worker / WebSocket live availability | Polling is enough for the demo. |
-| CI pipeline, compose stack, Grafana dashboards | Local commands cover what the brief asks for; the app emits standard telemetry that any backend (Prometheus / Loki / etc.) can ingest at deploy time. |
-
----
-
-## 11. Assumptions
-
-Per the brief's "make a reasonable assumption and document it":
-
-- ServiceType durations are fixed per type (no parts-availability variance).
-- Each dealership operates in a single timezone, given by IANA name.
-- A vehicle belongs to exactly one customer.
-- Walk-ins are not in scope; every appointment is created via the API.
-- Booking lead-time minimum is 0 (you can book "for now"); maximum is 1 year. Both configurable.
-- Half-open interval semantics: `[Start, End)` — adjacent appointments do not overlap.
-- A confirmed appointment owns exactly one technician and one bay for its full duration.
-- Cancelling does not require a reason in v1.
-- Technicians and bays are independent entities, each assignable to one or more dealerships via M:N junctions. A booking selects only resources currently assigned to its dealership, and overlap checks span all dealerships (a technician can't be in two places at once).
-- Skills are personal to a technician and *not* dealership-scoped (a certification doesn't change between sites).
-- Booking the technician's home dealership versus a visiting one is undistinguished in v1; both behave identically.
-
----
-
-## 12. Risks and mitigations
+## 10. Risks and mitigations
 
 | Risk | Mitigation |
 |---|---|
@@ -616,7 +581,7 @@ Per the brief's "make a reasonable assumption and document it":
 
 ---
 
-## 13. AI collaboration in the design phase
+## 11. AI collaboration in the design phase
 
 This document was produced through an iterative dialogue with Claude (Anthropic) playing the role of a pair-thinking systems engineer. The collaboration shape:
 
@@ -627,12 +592,3 @@ This document was produced through an iterative dialogue with Claude (Anthropic)
 - **Pushback explicit.** Several reviewer corrections reshaped the design rather than accepting the first cut: soft-delete + `IsActive` were added to every entity via a shared `EntityBase`; `Skill` was promoted from a string code to a first-class entity; the project layout was split so `Application` and `Api` no longer share concerns; CI scope was removed from the deliverables; and `Technician` / `ServiceBay` were lifted out of a 1:N relationship with `Dealership` into M:N junctions, prompting a corresponding revision of the booking and availability flows.
 
 This produced a design where every decision is traceable to a question and an option set, every simplification is named, and every "out of scope" item has an extension path. The implementation phase will use a separate written plan, derived from this spec, to direct the AI through scaffolding, test-first slice implementation, and verification — with the same one-question-at-a-time discipline applied at the code level.
-
----
-
-## 14. Open questions for the reviewer
-
-- **Are there preferred naming conventions** in the Keyloop service ecosystem (e.g., `Service.X`, `X.Service`)? Default chosen here: `Scheduler.Domain` / `Scheduler.Application` / `Scheduler.Infrastructure` / `Scheduler.Api`.
-- **Is SQLite acceptable** as the demo persistence layer, or should the assessment run against SQL Server? (Connection string + a one-line `UseSqlServer` change suffices; documented as the production swap path.)
-- **Are Idempotency-Key semantics expected on cancel/reschedule** as well as create? (Design includes them; reviewer can rule out.)
-- **Booking lead-time bounds** — is "now" too aggressive a minimum, or should there be a 15-minute floor?
