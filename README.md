@@ -12,7 +12,7 @@ A .NET 8 / ASP.NET Core / EF Core / SQLite REST API that books service appointme
 | Concurrency | Serializable transaction + filtered unique index + Polly retry + RowVersion |
 | Soft-delete | `EntityBase` convention + EF global query filter + `SaveChanges` interceptor |
 | API | REST + OpenAPI + RFC 7807 problem details + Idempotency-Key |
-| Observability | Serilog (stdout JSON) + OpenTelemetry traces (console) + Prometheus `/metrics` |
+| Observability | Serilog (stdout JSON) + OpenTelemetry traces (console) + plain JSON report endpoint |
 | Tests | NUnit 4 unit + integration + concurrency + architecture tests |
 
 ## Quick start
@@ -26,7 +26,7 @@ dotnet run --project src/Scheduler.Api
 Then:
 
 - Swagger UI: `https://localhost:7279/swagger/index.html`
-- Metrics:    `https://localhost:7279/metrics`
+- Report:     `https://localhost:7279/api/v1/report`
 - Health:     `https://localhost:7279/health/ready`
 
 The first run creates `scheduler.db` and seeds demo data when running in `Development`.
@@ -72,6 +72,7 @@ Dependencies flow: `Api → Application → Domain` and `Infrastructure → Appl
 | `POST` | `/api/v1/appointments/{id}/reschedule` | Atomic cancel-then-book |
 | `GET`  | `/api/v1/availability/slots` | List bookable windows |
 | `GET`  | `/api/v1/dealerships` etc. | Reference-data reads |
+| `GET`  | `/api/v1/report` | Aggregate counts: total / by status / by dealership / by service type |
 
 All POSTs accept an `Idempotency-Key` header; replays with the same body return the original response, replays with a different body return `409 IDEMPOTENCY_REPLAY_MISMATCH`.
 

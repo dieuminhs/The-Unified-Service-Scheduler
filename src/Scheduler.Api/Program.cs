@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Scheduler.Api.Configuration;
@@ -27,7 +26,6 @@ builder.Services.Configure<SeedingOptions>(builder.Configuration.GetSection(Seed
 // Application + Infrastructure
 builder.Services.AddSchedulerApplication();
 builder.Services.AddSchedulerInfrastructure(builder.Configuration);
-builder.Services.AddSingleton<SchedulerMetrics>();
 
 // MVC + ProblemDetails
 builder.Services.AddControllers();
@@ -39,7 +37,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<SchedulerDbContext>(tags: new[] { "ready" });
 
-// OpenTelemetry — traces + metrics
+// OpenTelemetry — traces only
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(r => r.AddService("Scheduler.Api"))
     .WithTracing(t => t
@@ -47,13 +45,7 @@ builder.Services.AddOpenTelemetry()
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
         .AddEntityFrameworkCoreInstrumentation()
-        .AddConsoleExporter())
-    .WithMetrics(m => m
-        .AddMeter(SchedulerMetrics.MeterName)
-        .AddAspNetCoreInstrumentation()
-        .AddHttpClientInstrumentation()
-        .AddRuntimeInstrumentation()
-        .AddPrometheusExporter());
+        .AddConsoleExporter());
 
 var app = builder.Build();
 
@@ -85,7 +77,6 @@ app.UseMiddleware<IdempotencyMiddleware>();
 app.MapControllers();
 app.MapHealthChecks("/health/live", new() { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new() { Predicate = c => c.Tags.Contains("ready") });
-app.MapPrometheusScrapingEndpoint();
 
 await app.RunAsync();
 

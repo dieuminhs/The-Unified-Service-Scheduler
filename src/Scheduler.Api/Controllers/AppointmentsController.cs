@@ -30,7 +30,6 @@ public sealed class AppointmentsController : ControllerBase
     private readonly IIdempotencyStore _idempotency;
     private readonly IValidator<BookAppointmentRequest> _bookValidator;
     private readonly IValidator<RescheduleAppointmentRequest> _rescheduleValidator;
-    private readonly SchedulerMetrics _metrics;
     private readonly BookingOptions _options;
     private readonly ILogger<AppointmentsController> _logger;
 
@@ -39,11 +38,11 @@ public sealed class AppointmentsController : ControllerBase
         IAppointmentReader reader, IIdempotencyStore idempotency,
         IValidator<BookAppointmentRequest> bookValidator,
         IValidator<RescheduleAppointmentRequest> rescheduleValidator,
-        SchedulerMetrics metrics, IOptions<BookingOptions> options, ILogger<AppointmentsController> logger)
+        IOptions<BookingOptions> options, ILogger<AppointmentsController> logger)
     {
         _booking = booking; _cancel = cancel; _reschedule = reschedule; _reader = reader; _idempotency = idempotency;
         _bookValidator = bookValidator; _rescheduleValidator = rescheduleValidator;
-        _metrics = metrics; _options = options.Value; _logger = logger;
+        _options = options.Value; _logger = logger;
     }
 
     [HttpPost]
@@ -55,7 +54,6 @@ public sealed class AppointmentsController : ControllerBase
         activity?.SetTag("dealership.id", req.DealershipId);
         activity?.SetTag("service_type.id", req.ServiceTypeId);
 
-        var sw = Stopwatch.StartNew();
         var attempt = 0;
         var pipeline = BuildRetryPipeline();
 
@@ -76,12 +74,6 @@ public sealed class AppointmentsController : ControllerBase
                 await _idempotency.PutAsync(key, hash, "201", json, appointment.Id, DateTime.UtcNow.AddHours(24), ct);
             }
 
-            _metrics.BookingsTotal.Add(1,
-                new KeyValuePair<string, object?>("dealership_id", req.DealershipId),
-                new KeyValuePair<string, object?>("service_type_id", req.ServiceTypeId),
-                new KeyValuePair<string, object?>("outcome", "confirmed"));
-            if (attempt > 1) _metrics.BookingRetriesTotal.Add(1, new KeyValuePair<string, object?>("outcome", "resolved"));
-            _metrics.BookingDurationSeconds.Record(sw.Elapsed.TotalSeconds, new KeyValuePair<string, object?>("outcome", "confirmed"));
             activity?.SetTag("outcome", "confirmed");
             activity?.SetTag("appointment.id", appointment.Id);
 
@@ -89,23 +81,16 @@ public sealed class AppointmentsController : ControllerBase
         }
         catch (SlotTakenException)
         {
-            _metrics.BookingsTotal.Add(1,
-                new KeyValuePair<string, object?>("dealership_id", req.DealershipId),
-                new KeyValuePair<string, object?>("service_type_id", req.ServiceTypeId),
-                new KeyValuePair<string, object?>("outcome", "conflict"));
-            if (attempt > 1) _metrics.BookingRetriesTotal.Add(1, new KeyValuePair<string, object?>("outcome", "exhausted"));
             activity?.SetTag("outcome", "conflict");
             throw;
         }
         catch (TechnicianUnqualifiedException)
         {
-            _metrics.BookingsTotal.Add(1, new KeyValuePair<string, object?>("outcome", "unqualified"));
             activity?.SetTag("outcome", "unqualified");
             throw;
         }
         catch (OutsideOpeningHoursException)
         {
-            _metrics.BookingsTotal.Add(1, new KeyValuePair<string, object?>("outcome", "outside_hours"));
             activity?.SetTag("outcome", "outside_hours");
             throw;
         }

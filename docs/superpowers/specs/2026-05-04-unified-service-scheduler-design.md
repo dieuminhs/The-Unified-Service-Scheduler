@@ -20,7 +20,7 @@ Build an Appointment Scheduler that lets a customer request a service appointmen
 | 3 | Skill-tag-based qualification matching (`required ⊆ technician.skills`) | Realistic for automotive service; cleanest to test. |
 | 4 | Optimistic concurrency: serializable transaction + in-txn overlap check + filtered unique index + Polly retry + RowVersion | Standard production pattern; testable as "10 parallel POSTs → 1 win, 9 conflicts". |
 | 5 | Lean scope + reschedule-as-atomic-cancel-then-book | Scenario's three core requirements are the booking flow itself; everything else risks dilution. |
-| 6 | Serilog (stdout) + OpenTelemetry traces (console) + Prometheus `/metrics` endpoint | Three pillars wired with real instrumentation; same simple setup in dev and prod. *How* telemetry is collected is a deployment concern, not an application concern. |
+| 6 | Serilog (stdout) + OpenTelemetry traces (console) + plain JSON report endpoint | Three observability surfaces: structured logs, request traces, and an aggregate report; the same setup works in dev and prod. |
 | 7 | Layered architecture (`Domain` → `Application` → `Infrastructure` ← `Api`) with SOLID-disciplined splits | Mirrors the use-case shape; services are testable as a plain class library; no MediatR ceremony. |
 
 ### Goals
@@ -51,9 +51,9 @@ Real auth (only `X-Dealership-Id` header stub), notifications, per-technician sh
 │ Mock auth:         │    │  └────────────────┬───────────────────────┘ │    ┌──────────────────┐
 │  X-Dealership-Id   │    │                   ▼                         │    │ Telemetry        │
 │  header stub       │    │  ┌────────────────────────────────────────┐ │    │ stdout (logs +   │
-└────────────────────┘    │  │ Controllers (thin)                     │ │    │  /metrics        │
-                          │  └────────────────┬───────────────────────┘ │    │   traces)        │
-                          │                   ▼                         │    │  (Prometheus)    │
+└────────────────────┘    │  │ Controllers (thin)                     │ │    │   traces)        │
+                          │  └────────────────┬───────────────────────┘ │    │ /api/v1/report   │
+                          │                   ▼                         │    │ (aggregate JSON) │
                           │  ┌────────────────────────────────────────┐ │    └──────────────────┘
                           │  │ Application — services (split per SRP) │ │
                           │  │  Booking · Cancellation · Reschedule · │ │    ┌──────────────────┐
@@ -448,20 +448,9 @@ Compact JSON formatter to stdout. Log scope fields stamped on every line:
 
 Request logs use `UseSerilogRequestLogging()` with method, status, elapsed-ms, route. **PII is never logged** — services use IDs only; a `SensitiveAttribute` + custom `IDestructuringPolicy` masks any field that slips through.
 
-### 8.2 Metrics — Prometheus exposition
+### 8.2 Operational report
 
-`Meter` named `Scheduler.Bookings`. Exposed at `/metrics` via `OpenTelemetry.Exporter.Prometheus.AspNetCore`. Any Prometheus-compatible scraper can read it without further configuration.
-
-| Name | Kind | Tags | Purpose |
-|---|---|---|---|
-| `bookings_total` | counter | `dealership_id`, `service_type_id`, `outcome` (`confirmed` / `conflict` / `unqualified` / `outside_hours` / `error`) | Outcome of every booking attempt |
-| `booking_duration_seconds` | histogram | `outcome` | Booking transaction latency |
-| `booking_retries_total` | counter | `outcome` (`resolved` / `exhausted`) | How often Polly's retry actually saves the day |
-| `appointments_active` | observable gauge | `dealership_id` | Confirmed appointments not yet started |
-| `availability_query_duration_seconds` | histogram | `dealership_id` | `/availability/slots` read path |
-| `idempotency_replays_total` | counter | `outcome` (`hit` / `mismatch`) | Idempotency activity |
-
-Plus the standard kit auto-collected: HTTP request rate / latency / status, .NET GC pressure, threadpool, EF Core command duration.
+A read-only `GET /api/v1/report` endpoint returns aggregate counts: total appointments, breakdown by status (Confirmed/Cancelled), per-dealership totals, and per-service-type totals. Anyone (operator, demo viewer, monitoring tool) can hit it for a quick view of what the system has been doing — no scraping, no Prometheus, no auth.
 
 ### 8.3 Tracing — OpenTelemetry
 
