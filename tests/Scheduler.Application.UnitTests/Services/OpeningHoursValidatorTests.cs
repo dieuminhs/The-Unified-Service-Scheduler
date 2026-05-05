@@ -17,7 +17,7 @@ public sealed class OpeningHoursValidatorTests
     };
 
     [Test]
-    public void Within_opening_hours_returns_true()
+    public void IsWithinOpeningHours_WithinHours_ReturnsTrue()
     {
         var d = Etcd(new OpeningHoursEntry(DayOfWeek.Tuesday, new(9, 0), new(17, 0)));
         var sut = new OpeningHoursValidator();
@@ -28,7 +28,7 @@ public sealed class OpeningHoursValidatorTests
     }
 
     [Test]
-    public void End_exactly_at_close_is_within_hours()
+    public void IsWithinOpeningHours_EndAtClose_ReturnsTrue()
     {
         var d = Etcd(new OpeningHoursEntry(DayOfWeek.Tuesday, new(9, 0), new(17, 0)));
         var sut = new OpeningHoursValidator();
@@ -39,7 +39,7 @@ public sealed class OpeningHoursValidatorTests
     }
 
     [Test]
-    public void Start_before_opening_returns_false()
+    public void IsWithinOpeningHours_StartBeforeOpening_ReturnsFalse()
     {
         var d = Etcd(new OpeningHoursEntry(DayOfWeek.Tuesday, new(9, 0), new(17, 0)));
         var sut = new OpeningHoursValidator();
@@ -50,7 +50,7 @@ public sealed class OpeningHoursValidatorTests
     }
 
     [Test]
-    public void End_after_closing_returns_false()
+    public void IsWithinOpeningHours_EndAfterClosing_ReturnsFalse()
     {
         var d = Etcd(new OpeningHoursEntry(DayOfWeek.Tuesday, new(9, 0), new(17, 0)));
         var sut = new OpeningHoursValidator();
@@ -61,7 +61,7 @@ public sealed class OpeningHoursValidatorTests
     }
 
     [Test]
-    public void No_opening_hours_for_day_returns_false()
+    public void IsWithinOpeningHours_NoHoursForDay_ReturnsFalse()
     {
         var d = Etcd(new OpeningHoursEntry(DayOfWeek.Monday, new(9, 0), new(17, 0)));
         var sut = new OpeningHoursValidator();

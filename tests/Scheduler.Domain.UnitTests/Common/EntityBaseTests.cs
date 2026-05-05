@@ -10,7 +10,7 @@ public sealed class EntityBaseTests
     private sealed class FakeEntity : EntityBase { }
 
     [Test]
-    public void New_entity_has_active_true_and_deleted_false()
+    public void Defaults_NewEntity_ActiveTrueDeletedFalse()
     {
         var e = new FakeEntity();
         e.IsActive.Should().BeTrue();
@@ -20,7 +20,7 @@ public sealed class EntityBaseTests
     }
 
     [Test]
-    public void RowVersion_initialised_as_empty_array_not_null()
+    public void Defaults_RowVersion_NotNull()
     {
         var e = new FakeEntity();
         e.RowVersion.Should().NotBeNull();

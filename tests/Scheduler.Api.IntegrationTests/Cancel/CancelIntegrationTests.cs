@@ -36,7 +36,7 @@ public sealed class CancelIntegrationTests
     }
 
     [Test]
-    public async Task Cancel_then_rebook_same_slot_succeeds()
+    public async Task Cancel_ThenRebookSameSlot_Succeeds()
     {
         var start = _factory.Clock.UtcNow.AddHours(1);
         var req = new BookAppointmentRequest(_seed.DealershipA.Id, _seed.Customer.Id, _seed.Vehicle.Id,
@@ -53,7 +53,7 @@ public sealed class CancelIntegrationTests
     }
 
     [Test]
-    public async Task Cancel_already_cancelled_returns_409()
+    public async Task Cancel_AlreadyCancelled_Returns409()
     {
         var start = _factory.Clock.UtcNow.AddHours(1);
         var req = new BookAppointmentRequest(_seed.DealershipA.Id, _seed.Customer.Id, _seed.Vehicle.Id,

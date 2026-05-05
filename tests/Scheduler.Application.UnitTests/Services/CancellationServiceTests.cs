@@ -26,7 +26,7 @@ public sealed class CancellationServiceTests
             endsAtUtc: start.AddHours(1));
 
     [Test]
-    public async Task Cancels_a_confirmed_appointment()
+    public async Task CancelAsync_ConfirmedAppointment_TransitionsToCancelled()
     {
         var appointment = Confirmed(Now.AddHours(1));
         var writer = new Mock<IAppointmentWriter>();
@@ -44,7 +44,7 @@ public sealed class CancellationServiceTests
     }
 
     [Test]
-    public void Throws_ResourceNotFound_when_id_unknown()
+    public void CancelAsync_UnknownId_ThrowsResourceNotFound()
     {
         var writer = new Mock<IAppointmentWriter>();
         writer.Setup(w => w.GetForUpdateAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync((Appointment?)null);
@@ -55,7 +55,7 @@ public sealed class CancellationServiceTests
     }
 
     [Test]
-    public void Throws_AlreadyCancelled_when_already_cancelled()
+    public void CancelAsync_AlreadyCancelled_ThrowsAlreadyCancelled()
     {
         var appointment = Confirmed(Now.AddHours(1));
         appointment.Cancel(Now);

@@ -8,7 +8,7 @@ namespace Scheduler.ArchitectureTests;
 public sealed class LayerDependencyTests
 {
     [Test]
-    public void Domain_should_not_depend_on_anything_external()
+    public void Domain_DoesNotDependOnAnythingExternal()
     {
         var result = Types.InAssembly(typeof(Scheduler.Domain.Common.EntityBase).Assembly)
             .Should()
@@ -21,7 +21,7 @@ public sealed class LayerDependencyTests
     }
 
     [Test]
-    public void Application_should_not_depend_on_EF_or_AspNetCore()
+    public void Application_DoesNotDependOnEFOrAspNetCore()
     {
         var result = Types.InAssembly(typeof(Scheduler.Application.Services.BookingService).Assembly)
             .Should()

@@ -9,7 +9,7 @@ namespace Scheduler.Application.UnitTests.Validation;
 public sealed class BookAppointmentRequestValidatorTests
 {
     [Test]
-    public void Empty_ids_fail_validation()
+    public void Validate_EmptyIds_FailsValidation()
     {
         var sut = new BookAppointmentRequestValidator();
         var request = new BookAppointmentRequest(
@@ -27,7 +27,7 @@ public sealed class BookAppointmentRequestValidatorTests
     }
 
     [Test]
-    public void Valid_request_passes()
+    public void Validate_ValidRequest_Passes()
     {
         var sut = new BookAppointmentRequestValidator();
         var request = new BookAppointmentRequest(

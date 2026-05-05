@@ -7,7 +7,7 @@ namespace Scheduler.Domain.UnitTests;
 public sealed class SmokeTests
 {
     [Test]
-    public void Runner_executes_at_least_one_test()
+    public void Runner_ExecutesAtLeastOneTest()
     {
         true.Should().BeTrue();
     }

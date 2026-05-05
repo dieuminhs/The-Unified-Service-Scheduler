@@ -11,7 +11,7 @@ namespace Scheduler.Application.UnitTests.Services;
 public sealed class QualificationMatcherTests
 {
     [Test]
-    public async Task Delegates_to_repository_and_returns_result()
+    public async Task FindQualifiedAsync_DelegatesToRepository_ReturnsResult()
     {
         var serviceTypeId = Guid.NewGuid();
         var dealershipId = Guid.NewGuid();

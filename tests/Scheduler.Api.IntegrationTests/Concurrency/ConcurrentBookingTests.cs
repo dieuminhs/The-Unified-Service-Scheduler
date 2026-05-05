@@ -33,7 +33,7 @@ public sealed class ConcurrentBookingTests
     public async Task TearDown() => await _factory.DisposeAsync();
 
     [Test]
-    public async Task Ten_concurrent_bookings_for_same_slot_yield_two_successes_and_eight_conflicts()
+    public async Task TenConcurrentBookings_ForSameSlot_TwoSucceedEightConflict()
     {
         // The seed has 2 technicians (Alice, Bob) and 2 bays at Dealership A with no required skills for QuickService.
         // 10 parallel bookings for the same slot should fill both resources exactly twice (2 successes),
@@ -66,7 +66,7 @@ public sealed class ConcurrentBookingTests
     }
 
     [Test]
-    public async Task Concurrent_book_and_cancel_does_not_corrupt_state()
+    public async Task ConcurrentBookAndCancel_DoesNotCorruptState()
     {
         var start = _factory.Clock.UtcNow.AddHours(1);
         var req = new BookAppointmentRequest(_seed.DealershipA.Id, _seed.Customer.Id, _seed.Vehicle.Id,

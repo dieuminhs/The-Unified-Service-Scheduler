@@ -103,7 +103,7 @@ public sealed class BookingServiceTests
     private BookAppointmentRequest Req() => new(_dealership.Id, _customer.Id, _vehicle.Id, _service.Id, In(1));
 
     [Test]
-    public async Task Books_when_all_resources_available()
+    public async Task BookAsync_AllResourcesAvailable_ReturnsConfirmedAppointment()
     {
         var appointment = await _sut.BookAsync(Req(), CancellationToken.None);
         appointment.Should().NotBeNull();
@@ -115,7 +115,7 @@ public sealed class BookingServiceTests
     }
 
     [Test]
-    public void Throws_StartInPast_when_start_in_the_past()
+    public void BookAsync_StartInPast_ThrowsStartInPast()
     {
         var pastReq = Req() with { StartsAtUtc = In(-1) };
         var act = async () => await _sut.BookAsync(pastReq, CancellationToken.None);
@@ -123,7 +123,7 @@ public sealed class BookingServiceTests
     }
 
     [Test]
-    public void Throws_OutsideOpeningHours_when_validator_says_no()
+    public void BookAsync_OutsideOpeningHours_ThrowsOutsideOpeningHours()
     {
         _hours.Setup(h => h.IsWithinOpeningHours(It.IsAny<Dealership>(), It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .Returns(false);
@@ -132,7 +132,7 @@ public sealed class BookingServiceTests
     }
 
     [Test]
-    public void Throws_TechnicianUnqualified_when_no_qualified_techs_exist()
+    public void BookAsync_NoQualifiedTechnicians_ThrowsTechnicianUnqualified()
     {
         _qualifier.Setup(q => q.FindQualifiedAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Technician>());
@@ -142,7 +142,7 @@ public sealed class BookingServiceTests
     }
 
     [Test]
-    public void Throws_SlotTaken_when_no_tech_free()
+    public void BookAsync_NoTechnicianFree_ThrowsSlotTaken()
     {
         _availability.Setup(a => a.FirstFreeTechnicianAsync(
                 It.IsAny<IReadOnlyList<Technician>>(),
@@ -156,7 +156,7 @@ public sealed class BookingServiceTests
     }
 
     [Test]
-    public void Throws_SlotTaken_when_no_bay_free()
+    public void BookAsync_NoBayFree_ThrowsSlotTaken()
     {
         _availability.Setup(a => a.FirstFreeBayAsync(
                 It.IsAny<IReadOnlyList<ServiceBay>>(),
@@ -170,7 +170,7 @@ public sealed class BookingServiceTests
     }
 
     [Test]
-    public void Throws_ResourceNotFound_for_missing_dealership()
+    public void BookAsync_MissingDealership_ThrowsResourceNotFound()
     {
         _dealershipRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Dealership?)null);
@@ -179,7 +179,7 @@ public sealed class BookingServiceTests
     }
 
     [Test]
-    public void Throws_when_vehicle_belongs_to_different_customer()
+    public void BookAsync_VehicleNotOwnedByCustomer_Throws()
     {
         var otherCustomer = new Customer { FirstName = "Z", LastName = "Z", Email = "z@z.example" };
         _vehicle.CustomerId = otherCustomer.Id;

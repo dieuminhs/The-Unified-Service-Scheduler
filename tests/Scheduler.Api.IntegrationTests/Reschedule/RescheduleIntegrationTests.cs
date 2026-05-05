@@ -38,7 +38,7 @@ public sealed class RescheduleIntegrationTests
     }
 
     [Test]
-    public async Task Reschedule_HappyPath_OldCancelled_NewConfirmed()
+    public async Task Reschedule_HappyPath_OldCancelledNewConfirmed()
     {
         var start = _factory.Clock.UtcNow.AddHours(1);
         var req = new BookAppointmentRequest(_seed.DealershipA.Id, _seed.Customer.Id, _seed.Vehicle.Id,

@@ -45,7 +45,7 @@ public sealed class AuditAndSoftDeleteInterceptorTests
     }
 
     [Test]
-    public async Task Adding_an_entity_stamps_CreatedAtUtc()
+    public async Task SaveChanges_AddedEntity_StampsCreatedAtUtc()
     {
         var c = new Customer { FirstName = "A", LastName = "B", Email = "a@b.example" };
         _ctx.Customers.Add(c);
@@ -56,7 +56,7 @@ public sealed class AuditAndSoftDeleteInterceptorTests
     }
 
     [Test]
-    public async Task Modifying_an_entity_stamps_UpdatedAtUtc()
+    public async Task SaveChanges_ModifiedEntity_StampsUpdatedAtUtc()
     {
         var c = new Customer { FirstName = "A", LastName = "B", Email = "a@b.example" };
         _ctx.Customers.Add(c);
@@ -70,7 +70,7 @@ public sealed class AuditAndSoftDeleteInterceptorTests
     }
 
     [Test]
-    public async Task Removing_an_entity_soft_deletes_it()
+    public async Task SaveChanges_RemovedEntity_SoftDeletes()
     {
         var c = new Customer { FirstName = "A", LastName = "B", Email = "a@b.example" };
         _ctx.Customers.Add(c);
@@ -86,7 +86,7 @@ public sealed class AuditAndSoftDeleteInterceptorTests
     }
 
     [Test]
-    public async Task Soft_deleted_rows_are_filtered_out_by_default()
+    public async Task Query_SoftDeletedRows_ExcludedByDefault()
     {
         var c = new Customer { FirstName = "A", LastName = "B", Email = "a@b.example" };
         _ctx.Customers.Add(c);

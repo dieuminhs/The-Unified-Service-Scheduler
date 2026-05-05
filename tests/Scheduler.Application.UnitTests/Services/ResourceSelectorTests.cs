@@ -8,7 +8,7 @@ namespace Scheduler.Application.UnitTests.Services;
 public sealed class ResourceSelectorTests
 {
     [Test]
-    public void Pick_returns_first_when_list_non_empty()
+    public void Pick_NonEmptyList_ReturnsFirst()
     {
         var sut = new ResourceSelector();
         var picked = sut.Pick(new List<string> { "a", "b", "c" });
@@ -16,7 +16,7 @@ public sealed class ResourceSelectorTests
     }
 
     [Test]
-    public void Pick_returns_null_when_list_empty()
+    public void Pick_EmptyList_ReturnsNull()
     {
         var sut = new ResourceSelector();
         var picked = sut.Pick(new List<string>());

@@ -13,7 +13,7 @@ public sealed class AvailabilityServiceTests
     private static DateTime At(int h) => new(2026, 5, 12, h, 0, 0, DateTimeKind.Utc);
 
     [Test]
-    public async Task FirstFreeTechnician_returns_first_with_no_overlap()
+    public async Task FirstFreeTechnician_NoOverlap_ReturnsFirst()
     {
         var t1 = new Technician { FullName = "A" };
         var t2 = new Technician { FullName = "B" };
@@ -35,7 +35,7 @@ public sealed class AvailabilityServiceTests
     }
 
     [Test]
-    public async Task FirstFreeTechnician_returns_null_when_all_busy()
+    public async Task FirstFreeTechnician_AllBusy_ReturnsNull()
     {
         var t1 = new Technician { FullName = "A" };
 
@@ -55,7 +55,7 @@ public sealed class AvailabilityServiceTests
     }
 
     [Test]
-    public async Task FirstFreeBay_mirror_of_technician_logic()
+    public async Task FirstFreeBay_NoOverlap_ReturnsFirst()
     {
         var b1 = new ServiceBay { Name = "Bay 1" };
         var b2 = new ServiceBay { Name = "Bay 2" };

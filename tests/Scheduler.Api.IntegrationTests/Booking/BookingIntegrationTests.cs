@@ -36,7 +36,7 @@ public sealed class BookingIntegrationTests
     }
 
     [Test]
-    public async Task Book_HappyPath_Returns201_Confirmed()
+    public async Task Book_HappyPath_Returns201Confirmed()
     {
         var req = new BookAppointmentRequest(_seed.DealershipA.Id, _seed.Customer.Id, _seed.Vehicle.Id,
             _seed.QuickService.Id, _factory.Clock.UtcNow.AddHours(1));
@@ -50,7 +50,7 @@ public sealed class BookingIntegrationTests
     }
 
     [Test]
-    public async Task Book_StartInPast_Returns422_StartInPast()
+    public async Task Book_StartInPast_Returns422StartInPast()
     {
         var req = new BookAppointmentRequest(_seed.DealershipA.Id, _seed.Customer.Id, _seed.Vehicle.Id,
             _seed.QuickService.Id, _factory.Clock.UtcNow.AddMinutes(-30));
@@ -63,7 +63,7 @@ public sealed class BookingIntegrationTests
     }
 
     [Test]
-    public async Task Book_NoQualifiedTechnician_Returns422_TechnicianUnqualified()
+    public async Task Book_NoQualifiedTechnician_Returns422TechnicianUnqualified()
     {
         // EV service requires both EV_CERT and DIAG; only Alice has both, and she's at A.
         // Booking against B (where Bob is, but he lacks EV_CERT) should yield TECHNICIAN_UNQUALIFIED.
@@ -78,7 +78,7 @@ public sealed class BookingIntegrationTests
     }
 
     [Test]
-    public async Task Book_AllResourcesBusy_Returns409_SlotTaken()
+    public async Task Book_AllResourcesBusy_Returns409SlotTaken()
     {
         var start = _factory.Clock.UtcNow.AddHours(1);
 
@@ -100,7 +100,7 @@ public sealed class BookingIntegrationTests
     }
 
     [Test]
-    public async Task Book_VehicleBelongsToDifferentCustomer_Returns400_OrEquivalent()
+    public async Task Book_VehicleBelongsToDifferentCustomer_Returns400OrEquivalent()
     {
         var otherCustomerId = Guid.NewGuid();
         var req = new BookAppointmentRequest(_seed.DealershipA.Id, otherCustomerId, _seed.Vehicle.Id,

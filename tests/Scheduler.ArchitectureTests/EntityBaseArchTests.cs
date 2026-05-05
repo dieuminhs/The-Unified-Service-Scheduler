@@ -9,7 +9,7 @@ namespace Scheduler.ArchitectureTests;
 public sealed class EntityBaseArchTests
 {
     [Test]
-    public void All_entities_inherit_EntityBase()
+    public void AllEntities_InheritEntityBase()
     {
         var result = Types.InAssembly(typeof(EntityBase).Assembly)
             .That().ResideInNamespace("Scheduler.Domain.Entities")

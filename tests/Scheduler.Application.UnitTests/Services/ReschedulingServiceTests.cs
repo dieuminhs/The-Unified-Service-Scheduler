@@ -14,7 +14,7 @@ namespace Scheduler.Application.UnitTests.Services;
 public sealed class ReschedulingServiceTests
 {
     [Test]
-    public async Task Cancels_old_and_books_new_atomically()
+    public async Task RescheduleAsync_HappyPath_CancelsOldAndBooksNewAtomically()
     {
         var now = new DateTime(2026, 5, 4, 12, 0, 0, DateTimeKind.Utc);
         var dealershipId = Guid.NewGuid();

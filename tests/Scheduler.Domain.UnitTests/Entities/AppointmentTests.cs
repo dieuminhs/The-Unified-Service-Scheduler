@@ -11,7 +11,7 @@ public sealed class AppointmentTests
     private static DateTime At(int h) => new(2026, 5, 12, h, 0, 0, DateTimeKind.Utc);
 
     [Test]
-    public void Confirm_throws_when_end_not_after_start()
+    public void Confirm_EndNotAfterStart_Throws()
     {
         var act = () => Appointment.Confirm(
             dealershipId: Guid.NewGuid(),
@@ -27,7 +27,7 @@ public sealed class AppointmentTests
     }
 
     [Test]
-    public void Confirm_creates_appointment_with_status_Confirmed()
+    public void Confirm_ValidArgs_StatusConfirmed()
     {
         var a = Appointment.Confirm(
             dealershipId: Guid.NewGuid(), customerId: Guid.NewGuid(), vehicleId: Guid.NewGuid(),
@@ -39,7 +39,7 @@ public sealed class AppointmentTests
     }
 
     [Test]
-    public void Cancel_transitions_status_and_stamps_cancelledAtUtc()
+    public void Cancel_Confirmed_TransitionsToCancelledWithTimestamp()
     {
         var a = Appointment.Confirm(
             dealershipId: Guid.NewGuid(), customerId: Guid.NewGuid(), vehicleId: Guid.NewGuid(),
@@ -54,7 +54,7 @@ public sealed class AppointmentTests
     }
 
     [Test]
-    public void Cancel_throws_if_already_cancelled()
+    public void Cancel_AlreadyCancelled_Throws()
     {
         var a = Appointment.Confirm(
             dealershipId: Guid.NewGuid(), customerId: Guid.NewGuid(), vehicleId: Guid.NewGuid(),
