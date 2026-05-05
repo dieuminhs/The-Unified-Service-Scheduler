@@ -12,7 +12,7 @@ A .NET 8 / ASP.NET Core / EF Core / SQLite REST API that books service appointme
 | Concurrency | Serializable transaction + filtered unique index + Polly retry + RowVersion |
 | Soft-delete | `EntityBase` convention + EF global query filter + `SaveChanges` interceptor |
 | API | REST + OpenAPI + RFC 7807 problem details + Idempotency-Key |
-| Observability | Serilog (stdout JSON) + OpenTelemetry traces (console) + plain JSON report endpoint |
+| Observability | Serilog (stdout JSON, with trace + span IDs propagated automatically) + plain JSON report endpoint |
 | Tests | NUnit 4 unit + integration + concurrency + architecture tests |
 
 ## Quick start

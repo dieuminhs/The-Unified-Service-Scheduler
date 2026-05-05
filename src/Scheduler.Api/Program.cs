@@ -42,8 +42,7 @@ builder.Services.AddOpenTelemetry()
         .AddSource(SchedulerActivitySource.Name)
         .AddAspNetCoreInstrumentation(o => o.Filter = ctx => !IsNoisePath(ctx.Request.Path))
         .AddHttpClientInstrumentation()
-        .AddEntityFrameworkCoreInstrumentation()
-        .AddConsoleExporter());
+        .AddEntityFrameworkCoreInstrumentation());
 
 static bool IsNoisePath(PathString path) =>
     path.StartsWithSegments("/health") ||

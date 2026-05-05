@@ -20,7 +20,7 @@ Build an Appointment Scheduler that lets a customer request a service appointmen
 | 3 | Skill-tag-based qualification matching (`required ⊆ technician.skills`) | Realistic for automotive service; cleanest to test. |
 | 4 | Optimistic concurrency: serializable transaction + in-txn overlap check + filtered unique index + Polly retry + RowVersion | Standard production pattern; testable as "10 parallel POSTs → 1 win, 9 conflicts". |
 | 5 | Lean scope + reschedule-as-atomic-cancel-then-book | Scenario's three core requirements are the booking flow itself; everything else risks dilution. |
-| 6 | Serilog (stdout) + OpenTelemetry traces (console) + plain JSON report endpoint | Three observability surfaces: structured logs, request traces, and an aggregate report; the same setup works in dev and prod. |
+| 6 | Serilog (stdout JSON, with trace and span IDs from OpenTelemetry) + plain JSON report endpoint | Two observability surfaces — structured logs with correlation IDs woven in, plus a single aggregate-counts endpoint. Same setup in dev and prod. |
 | 7 | Layered architecture (`Domain` → `Application` → `Infrastructure` ← `Api`) with SOLID-disciplined splits | Mirrors the use-case shape; services are testable as a plain class library; no MediatR ceremony. |
 
 ### Goals
