@@ -1,4 +1,4 @@
-@base = http://localhost:5000
+@base = https://localhost:7279
 @dealershipA = REPLACE_WITH_SEEDED_GUID
 @customer = REPLACE_WITH_SEEDED_GUID
 @vehicle = REPLACE_WITH_SEEDED_GUID

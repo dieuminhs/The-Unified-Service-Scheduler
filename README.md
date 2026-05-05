@@ -25,9 +25,9 @@ dotnet run --project src/Scheduler.Api
 
 Then:
 
-- Swagger UI: `http://localhost:5000/swagger`
-- Metrics:    `http://localhost:5000/metrics`
-- Health:     `http://localhost:5000/health/ready`
+- Swagger UI: `https://localhost:7279/swagger/index.html`
+- Metrics:    `https://localhost:7279/metrics`
+- Health:     `https://localhost:7279/health/ready`
 
 The first run creates `scheduler.db` and seeds demo data when running in `Development`.
 
