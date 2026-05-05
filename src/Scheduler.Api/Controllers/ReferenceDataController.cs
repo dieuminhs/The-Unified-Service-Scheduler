@@ -85,4 +85,17 @@ public sealed class ReferenceDataController : ControllerBase
             .Where(v => v.CustomerId == id)
             .Select(v => (object)new { v.Id, v.Vin, v.Make, v.Model, v.Year })
             .ToListAsync(ct);
+
+    [HttpGet("customers")]
+    public Task<List<object>> ListCustomers(CancellationToken ct) =>
+        _ctx.Customers.AsNoTracking()
+            .Select(c => (object)new
+            {
+                c.Id,
+                c.FirstName,
+                c.LastName,
+                c.Email,
+                Vehicles = c.Vehicles.Select(v => new { v.Id, v.Vin, v.Make, v.Model, v.Year })
+            })
+            .ToListAsync(ct);
 }
